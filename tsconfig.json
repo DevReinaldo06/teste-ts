@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+      "target": "es6", // Versão do JavaScript de saída
+      "module": "commonjs", // Sistema de módulos
+      "rootDir": "./src", // Onde nosso código .ts estará
+      "outDir": "./dist", // Onde o JavaScript compilado será salvo
+      "esModuleInterop": true, // Permite compatibilidade entre módulos CommonJS e ES
+      "forceConsistentCasingInFileNames": true,
+      "strict": true, // Habilita todas as checagens de tipo estritas
+      "skipLibCheck": true
+    },
+    "exclude": [
+      "node_modules",
+      "dist",
+      "prisma.config.ts"
+    ]
+}
+  
