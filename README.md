@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Postgres Starter
 
 A simple postgres starter for Project IDX.
@@ -22,3 +23,4 @@ You can also instead use the SQLDriver extension (already installed) to inspect 
 
 Look at .idx/dev.nix to learn more on the data was loaded in the DB.
 
+=======
