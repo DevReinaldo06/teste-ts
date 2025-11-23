@@ -1,3 +1,31 @@
-local
-.idx/.data
-/src/generated/prisma
+# 1. Pastas e Arquivos Locais/Temporários (Existentes na sua lista)
+# O Git ignora essas pastas que geralmente são cache ou dados gerados localmente.
+.idx/
+.data/
+/src/generated/prisma/
+
+# 2. Dependências e Compilados (Node.js/TypeScript ESSENCIAL)
+
+# Módulos de Dependências (Gerados por npm install)
+/node_modules
+
+# Pasta de saída da compilação do TypeScript (arquivos .js)
+/dist
+/build
+
+# Logs
+*.log
+npm-debug.log*
+yarn-error.log
+
+# 3. SEGURANÇA: Chaves Secretas e Variáveis de Ambiente (Firebase ESSENCIAL)
+
+# Variáveis de ambiente que contêm chaves secretas, URLs de bancos de dados, etc.
+.env
+*.env
+
+# Chaves de Serviço do Firebase (Service Account Keys)
+# NUNCA envie este arquivo ao GitHub. Use o nome EXATO do seu arquivo de chave.
+# Exemplo de nomes comuns:
+serviceAccountKey.json 
+firebase-key.json
