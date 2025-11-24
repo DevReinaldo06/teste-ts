@@ -5,21 +5,28 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client-js"
+  engineType = "binary" // Manter para estabilidade do tsx
 }
 
-model Paciente {
-  id             Int      @id @default(autoincrement())
-  nome           String
-  dataNascimento DateTime? @map("data_nascimento")
-  telefone       String?  @unique
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+model User { // <-- Novo modelo
+  id    Int     @id @default(autoincrement())
+  nome  String  
+  idade Int
+  email String @unique
 
-  @@map("paciente")
+  @@map("users") // <-- Nome da tabela será 'users'
+}
+
+model Card {
+  id Int @id @default(autoincrement())
+  imagem String
+  tipo String
+  nivel Int
+  classe String
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
