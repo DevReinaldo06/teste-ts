@@ -5,17 +5,22 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
-  engineType = "binary" // Manter para estabilidade do tsx
+  provider = "prisma-client-js"
+  engineType = "binary" // Manter para estabilidade do tsx
 }
 
-model User { // <-- Novo modelo
-  id    Int     @id @default(autoincrement())
-  nome  String  
-  idade Int
-  email String @unique
+datasource db {
+  provider = "postgresql"
+  url       = env("DATABASE_URL")
+}
 
-  @@map("users") // <-- Nome da tabela será 'users'
+model User {
+  id    Int     @id @default(autoincrement())
+  nome  String  
+  idade Int
+  email String @unique
+  
+  @@map("users")
 }
 
 model Card {
@@ -24,9 +29,4 @@ model Card {
   tipo String
   nivel Int
   classe String
-}
-
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
