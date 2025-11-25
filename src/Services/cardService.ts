@@ -1,5 +1,6 @@
 import prisma from '../db/prisma'; 
 import { Card, Prisma } from '@prisma/client';
+import { NotFoundError } from '../errors/ApiError'; // ⬅️ Importação da classe de erro ApiError
 
 // Tipos de dados de entrada para a tabela Card
 interface CardInput {
@@ -38,8 +39,9 @@ const cardService = {
         try {
             return await prisma.card.create({ data });
         } catch (error) {
-            // Não há campos @unique além do ID no schema Card, 
-            // então geralmente apenas relançamos o erro para o Controller
+            // Se houver necessidade futura de validar campos @unique,
+            // você adicionaria o tratamento para 'P2002' aqui, 
+            // lançando um 'ConflictError'.
             throw error;
         }
     },
@@ -56,7 +58,8 @@ const cardService = {
         } catch (error) {
             // Tratamento para Card não encontrado (P2025)
             if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-                 throw new Error("P2025: Card não encontrado.");
+                 // ⬅️ Substituído por NotFoundError
+                throw new NotFoundError("Card não encontrado para atualização.");
             }
             throw error;
         }
@@ -73,7 +76,8 @@ const cardService = {
         } catch (error) {
             // Tratamento para Card não encontrado (P2025)
             if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-                 throw new Error("P2025: Card não encontrado.");
+                 // ⬅️ Substituído por NotFoundError
+                throw new NotFoundError("Card não encontrado para exclusão.");
             }
             throw error;
         }

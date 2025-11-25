@@ -1,5 +1,6 @@
 import prisma from '../db/prisma'; 
 import { User, Prisma } from '@prisma/client';
+import { ConflictError, NotFoundError } from '../errors/ApiError'; // ⬅️ IMPORTANTE!
 
 // Tipos de dados de entrada
 type UserCreateData = { nome: string, idade: number, email: string };
@@ -26,8 +27,8 @@ const userService = {
             return await prisma.user.create({ data });
         } catch (error) {
             if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-                // Lança uma mensagem genérica que o Controller interpretará
-                throw new Error("P2002: Email já cadastrado."); 
+                // Lança o erro de conflito
+                throw new ConflictError("Email já cadastrado. Por favor, use outro email."); 
             }
             throw error;
         }
@@ -42,10 +43,11 @@ const userService = {
             });
         } catch (error) {
             if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-                throw new Error("P2002: Email já em uso por outro usuário.");
+                throw new ConflictError("O email fornecido já está em uso por outro usuário.");
             }
             if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-                 throw new Error("P2025: Usuário não encontrado.");
+                // Lança o erro de não encontrado
+                throw new NotFoundError("Usuário não encontrado para atualização.");
             }
             throw error;
         }
@@ -59,7 +61,8 @@ const userService = {
             });
         } catch (error) {
             if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-                 throw new Error("P2025: Usuário não encontrado.");
+                // Lança o erro de não encontrado
+                throw new NotFoundError("Usuário não encontrado para exclusão.");
             }
             throw error;
         }

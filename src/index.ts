@@ -1,24 +1,29 @@
 import 'dotenv/config'; 
 import app from './app'; 
 import prisma from './db/prisma'; 
+import swaggerUi from 'swagger-ui-express'; 
+import swaggerSpec from './Routes/swaggerConfig'; 
 
-const port: number = 3000;
+const port: number = Number(process.env.PORT) || 3000;
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 
 async function main() {
-    try {
-        // Conecta ao BD usando o módulo centralizado
-        await prisma.$connect();
-        console.log('✅ Conexão com o Banco de Dados (Render) estabelecida!');
+    try {
+        await prisma.$connect();
+        console.log('✅ Conexão com o Banco de Dados estabelecida!');
 
-        // Inicia o servidor Express
-        app.listen(port, () => {
-            console.log(`🚀 API de Usuários rodando em http://localhost:${port}. Rotas: /users`);
-        });
-        
-    } catch (error) {
-        console.error('❌ FATAL: Falha ao conectar ao Banco de Dados. A API não será iniciada.', error);
-        process.exit(1); 
-    }
+        app.listen(port, () => {
+            console.log(`🚀 API rodando em http://localhost:${port}.`);
+            console.log(`📘 Documentação Swagger em http://localhost:${port}/api-docs`); 
+        });
+        
+    } catch (error) {
+        console.error('❌ FATAL: Falha ao conectar ao Banco de Dados. A API não será iniciada.', error);
+        await prisma.$disconnect(); 
+        process.exit(1); 
+    }
 }
 
 main();

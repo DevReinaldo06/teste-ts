@@ -1,6 +1,8 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express'; // ⬅️ Adicionado NextFunction
 import cardService from '../Services/cardService'; // Importa o Service de Cards
 import { Card } from '@prisma/client'; // Importa o tipo Card
+// ⬅️ Importação das classes de erro da API
+import { BadRequestError, NotFoundError } from '../errors/ApiError'; 
 
 // Interface para garantir o formato correto dos dados de entrada
 interface CardInput {
@@ -14,153 +16,149 @@ const cardController = {
     // ------------------------------------
     // GET /cards
     // ------------------------------------
-    async getAll(req: Request, res: Response): Promise<void> {
+    async getAll(req: Request, res: Response, next: NextFunction): Promise<void> { // Adicionado next
         try {
             const cards: Card[] = await cardService.getAllCards();
             res.json(cards);
         } catch (error) {
-            console.error("Erro ao buscar cards:", error);
-            res.status(500).json({ message: "Erro interno do servidor." });
+            next(error); // Encaminha qualquer erro para o middleware de erro
         }
     },
 
     // ------------------------------------
     // GET /cards/:id
     // ------------------------------------
-    async getById(req: Request, res: Response): Promise<void> {
+    async getById(req: Request, res: Response, next: NextFunction): Promise<void> { // Adicionado next
         const id: number = parseInt(req.params.id, 10);
 
         if (isNaN(id) || id <= 0) {
-            res.status(400).json({ message: "ID inválido." }); return;
+            next(new BadRequestError("ID inválido.")); return; // Substituído res.status(400)
         }
 
         try {
             const card = await cardService.getCardById(id);
             if (!card) {
-                res.status(404).json({ message: "Card não encontrado" }); return;
+                // Se o Service retornar null, é 404.
+                next(new NotFoundError("Card não encontrado")); return; // Substituído res.status(404)
             }
             res.json(card);
         } catch (error) {
-            console.error("Erro ao buscar card por ID:", error);
-            res.status(500).json({ message: "Erro interno do servidor." });
+            next(error); // Encaminha o erro do Service/Prisma para o middleware de erro
         }
     },
 
     // ------------------------------------
     // POST /cards (Criar Novo Card)
     // ------------------------------------
-    async create(req: Request<{}, {}, CardInput>, res: Response): Promise<void> {
+    async create(req: Request<{}, {}, CardInput>, res: Response, next: NextFunction): Promise<void> { // Adicionado next
         const { imagem, tipo, nivel, classe } = req.body; 
 
-        // 1. Validação de Entrada (Responsabilidade do Controller)
+        // 1. Validação de Entrada
         
         // Validação de strings obrigatórias
         if (typeof imagem !== 'string' || imagem.trim() === "") {
-            res.status(400).json({ message: "A imagem é obrigatória." }); return;
+            next(new BadRequestError("A imagem é obrigatória.")); return; // Substituído res.status(400)
         }
         if (typeof tipo !== 'string' || tipo.trim() === "") {
-            res.status(400).json({ message: "O tipo é obrigatório." }); return;
+            next(new BadRequestError("O tipo é obrigatório.")); return; // Substituído res.status(400)
         }
         if (typeof classe !== 'string' || classe.trim() === "") {
-            res.status(400).json({ message: "A classe é obrigatória." }); return;
+            next(new BadRequestError("A classe é obrigatória.")); return; // Substituído res.status(400)
         }
         
         // Validação de número inteiro positivo
         if (typeof nivel !== 'number' || nivel < 0 || !Number.isInteger(nivel)) {
-            res.status(400).json({ message: "O nível deve ser um número inteiro não negativo." }); return;
+            next(new BadRequestError("O nível deve ser um número inteiro não negativo.")); return; // Substituído res.status(400)
         }
 
         try {
             const newCard = await cardService.createCard({ imagem, tipo, nivel, classe });
             res.status(201).json(newCard);
         } catch (error) {
-            console.error("Erro ao criar card:", error); 
-            res.status(500).json({ message: "Erro interno do servidor." });
+            next(error); // Encaminha o erro para o middleware de erro
         }
     },
 
     // ------------------------------------
     // PUT /cards/:id (Atualizar Card)
     // ------------------------------------
-    async update(req: Request, res: Response): Promise<void> {
+    async update(req: Request, res: Response, next: NextFunction): Promise<void> { // Adicionado next
         const id: number = parseInt(req.params.id, 10);
         const { imagem, tipo, nivel, classe } = req.body;
 
         if (isNaN(id) || id <= 0) {
-            res.status(400).json({ message: "ID inválido." }); return;
+            next(new BadRequestError("ID inválido.")); return; // Substituído res.status(400)
         }
 
         const updateData: Partial<CardInput> = {};
         let isUpdateDataValid = false;
         
         // Validação e construção do objeto updateData
-        if (imagem !== undefined && typeof imagem === 'string' && imagem.trim() !== "") {
-            updateData.imagem = imagem;
-            isUpdateDataValid = true;
-        } else if (imagem !== undefined) {
-            res.status(400).json({ message: "A imagem não pode ser vazia." }); return;
+        if (imagem !== undefined) {
+            if (typeof imagem === 'string' && imagem.trim() !== "") {
+                updateData.imagem = imagem;
+                isUpdateDataValid = true;
+            } else {
+                next(new BadRequestError("A imagem não pode ser vazia.")); return; // Substituído res.status(400)
+            }
         }
         
-        if (tipo !== undefined && typeof tipo === 'string' && tipo.trim() !== "") {
-            updateData.tipo = tipo;
-            isUpdateDataValid = true;
-        } else if (tipo !== undefined) {
-            res.status(400).json({ message: "O tipo não pode ser vazio." }); return;
+        if (tipo !== undefined) {
+            if (typeof tipo === 'string' && tipo.trim() !== "") {
+                updateData.tipo = tipo;
+                isUpdateDataValid = true;
+            } else {
+                next(new BadRequestError("O tipo não pode ser vazio.")); return; // Substituído res.status(400)
+            }
         }
 
-        if (classe !== undefined && typeof classe === 'string' && classe.trim() !== "") {
-            updateData.classe = classe;
-            isUpdateDataValid = true;
-        } else if (classe !== undefined) {
-            res.status(400).json({ message: "A classe não pode ser vazia." }); return;
+        if (classe !== undefined) {
+            if (typeof classe === 'string' && classe.trim() !== "") {
+                updateData.classe = classe;
+                isUpdateDataValid = true;
+            } else {
+                next(new BadRequestError("A classe não pode ser vazia.")); return; // Substituído res.status(400)
+            }
         }
         
-        if (nivel !== undefined && typeof nivel === 'number' && nivel >= 0 && Number.isInteger(nivel)) {
-            updateData.nivel = nivel;
-            isUpdateDataValid = true;
-        } else if (nivel !== undefined) {
-            res.status(400).json({ message: "O nível deve ser um número inteiro não negativo." }); return;
+        if (nivel !== undefined) {
+            if (typeof nivel === 'number' && nivel >= 0 && Number.isInteger(nivel)) {
+                updateData.nivel = nivel;
+                isUpdateDataValid = true;
+            } else {
+                next(new BadRequestError("O nível deve ser um número inteiro não negativo.")); return; // Substituído res.status(400)
+            }
         }
         
         if (!isUpdateDataValid) {
-            res.status(400).json({ message: "Nenhum dado válido para atualizar foi fornecido." }); return;
+            next(new BadRequestError("Nenhum dado válido para atualizar foi fornecido.")); return; // Substituído res.status(400)
         }
 
         try {
             const cardAtualizado = await cardService.updateCard(id, updateData);
             res.json(cardAtualizado);
         } catch (error) {
-            // Tratamento de erro de Card não encontrado (404)
-            if (error instanceof Error && error.message.startsWith("P2025")) {
-                res.status(404).json({ message: "Card não encontrado." });
-                return;
-            }
-            console.error("Erro ao atualizar card:", error);
-            res.status(500).json({ message: "Erro interno do servidor." });
+            // O Service lança NotFoundError ou ConflictError.
+            next(error); 
         }
     },
 
     // ------------------------------------
     // DELETE /cards/:id (Deletar Card)
     // ------------------------------------
-    async delete(req: Request, res: Response): Promise<void> {
+    async delete(req: Request, res: Response, next: NextFunction): Promise<void> { // Adicionado next
         const id: number = parseInt(req.params.id, 10);
 
         if (isNaN(id) || id <= 0) {
-            res.status(400).json({ message: "ID inválido." }); return;
+            next(new BadRequestError("ID inválido.")); return; // Substituído res.status(400)
         }
         
         try {
             await cardService.deleteCard(id);
             res.status(204).send(); // Resposta de sucesso sem conteúdo
         } catch (error) {
-            // Tratamento de erro de Card não encontrado (404)
-            if (error instanceof Error && error.message.startsWith("P2025")) {
-                res.status(404).json({ message: "Card não encontrado." });
-                return;
-            }
-            console.error("Erro ao deletar card:", error);
-            res.status(500).json({ message: "Erro interno do servidor." });
+            // O Service lança NotFoundError.
+            next(error); 
         }
     }
 };

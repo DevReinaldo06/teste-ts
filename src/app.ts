@@ -1,7 +1,8 @@
 import express, { Express, Request, Response } from "express";
 import cors from 'cors'; 
 import userRoutes from './Routes/userRoutes'; 
-import cardRoutes from './Routes/cardRoutes'; // ⬅️ IMPORT NECESSÁRIO!
+import cardRoutes from './Routes/cardRoutes'; 
+import errorMiddleware from "./middleware/errorMiddleware"; // ⬅️ NOVO IMPORT
 
 const app: Express = express();
 
@@ -11,13 +12,14 @@ app.use(express.json());
 
 // Rota de teste (Health Check)
 app.get("/", (req: Request, res: Response) => {
-    res.status(200).json({ status: 'API Online', message: 'Use /users ou /cards para os CRUDs.' });
+    res.status(200).json({ status: 'API Online', message: 'Use /users ou /cards para os CRUDs.' });
 });
 
-// Anexa o Router de usuários
+// Anexa os Routers
 app.use('/users', userRoutes); 
-
-// ⬅️ LINHA NECESSÁRIA PARA HABILITAR O CRUD DE CARDS!
 app.use('/cards', cardRoutes); 
+
+// ⬅️ MIDDLEWARE DE TRATAMENTO DE ERROS (DEVE SER O ÚLTIMO app.use)
+app.use(errorMiddleware);
 
 export default app;
