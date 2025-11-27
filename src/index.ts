@@ -2,16 +2,16 @@ import 'dotenv/config';
 import app from './app'; 
 import prisma from './db/prisma'; 
 import swaggerUi from 'swagger-ui-express'; 
-import swaggerSpec from './Routes/swaggerConfig'; 
+import swaggerSpec from './Routes/swaggerConfig'; // Assumindo que você tem este arquivo
 
 const port: number = Number(process.env.PORT) || 3000;
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-
 async function main() {
     try {
-        await prisma.$connect();
+        // Conecta ao DB e inicializa AdminKey
+        await prisma.$connect(); 
         console.log('✅ Conexão com o Banco de Dados estabelecida!');
 
         app.listen(port, () => {

@@ -1,140 +1,83 @@
-import { Request, Response, NextFunction } from 'express'; // ⬅️ Adicionado NextFunction
-import userService from '../Services/userService'; 
-import { User } from '@prisma/client'; 
-// CORREÇÃO: Adicionando NotFoundError à importação
-import { BadRequestError, NotFoundError } from '../errors/ApiError'; // ⬅️ Adicionado para validação 400
+// Conteúdo anterior + novos métodos
 
-// Interface para garantir o formato correto dos dados de entrada
-interface UserInput {
-    nome: string;
-    idade: number; 
-    email: string; 
+import { Request, Response, NextFunction } from 'express';
+import * as userService from '../Services/userService';
+import { BadRequestError, NotFoundError } from '../errors/ApiError'; // Adiciona NotFoundError
+
+// ----------------------------------------------------------------
+// ⚠️ NOVO: Lógica de Cadastro (POST /users)
+// ----------------------------------------------------------------
+export async function register(req: Request, res: Response, next: NextFunction) {
+    try {
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            throw new BadRequestError('E-mail e senha são obrigatórios para o cadastro.');
+        }
+        
+        // Validação básica de formato de senha (opcional)
+        if (password.length < 6) {
+             throw new BadRequestError('A senha deve ter pelo menos 6 caracteres.');
+        }
+
+        const newUser = await userService.registerUser(email, password);
+        
+        // Retorna 201 Created
+        return res.status(201).json({ 
+            message: 'Usuário cadastrado com sucesso. Por favor, faça login.', 
+            user: newUser 
+        });
+
+    } catch (error) {
+        next(error);
+    }
 }
 
-const userController = {
-    // GET ALL
-    async getAll(req: Request, res: Response, next: NextFunction): Promise<void> {
-        try {
-            const users: User[] = await userService.getAllUsers();
-            res.json(users);
-        } catch (error) {
-            next(error); // Encaminha qualquer erro para o middleware de erro
-        }
-    },
 
-    // GET BY ID
-    async getById(req: Request, res: Response, next: NextFunction): Promise<void> {
-        const id: number = parseInt(req.params.id, 10);
+// ----------------------------------------------------------------
+// ATUALIZADO: Lógica de Atualização (PUT /users/:id)
+// ----------------------------------------------------------------
+export async function updateProfile(req: Request, res: Response, next: NextFunction) {
+    try {
+        const { email, password } = req.body;
+        // Pega o ID do usuário injetado pelo middleware 'authenticate'
+        const userId = req.user!.id; 
 
-        if (isNaN(id) || id <= 0) {
-            next(new BadRequestError("ID inválido.")); return;
-        }
+        // Adiciona validação de que o ID do token é o mesmo que o ID da rota (se usar /users/:id)
+        // Aqui, presumimos que a rota é /users/me, ou que o usuário só edita a si mesmo.
+        // Se a rota fosse /users/:id, seria necessário verificar se o usuário é Admin.
 
-        try {
-            const user = await userService.getUserById(id);
-            if (!user) {
-                // Se o Service retornar null, é 404. O Service não lança erro aqui, então tratamos o 404.
-                next(new NotFoundError("Usuário não encontrado")); return;
-            }
-            res.json(user);
-        } catch (error) {
-            next(error); 
-        }
-    },
-
-    // POST
-    async create(req: Request<{}, {}, UserInput>, res: Response, next: NextFunction): Promise<void> {
-        const { nome, idade, email } = req.body; 
-
-        // Validação de entrada (Continua no Controller, mas usa BadRequestError)
-        if (typeof nome !== 'string' || nome.trim() === "") {
-            next(new BadRequestError("O nome é obrigatório.")); return;
-        }
-        if (typeof idade !== 'number' || idade <= 0 || !Number.isInteger(idade)) {
-            next(new BadRequestError("A idade deve ser um número inteiro positivo.")); return;
-        }
-        // Validação de email: se o Service falhar com P2002, o erro (ConflictError) será capturado.
-        if (typeof email !== 'string' || !email.includes('@') || email.trim().length < 5) {
-            next(new BadRequestError("O email é obrigatório e deve ser um formato válido.")); return;
+        if (!email && !password) {
+            throw new BadRequestError('Nenhum dado fornecido para atualização. Forneça e-mail ou senha.');
         }
 
-        try {
-            const newUser = await userService.createUser({ nome, idade, email });
-            res.status(201).json(newUser);
-        } catch (error) {
-            next(error); // Erros de conflito (P2002) vêm do Service e são capturados pelo middleware.
-        }
-    },
-
-    // PUT
-    async update(req: Request, res: Response, next: NextFunction): Promise<void> {
-        const id: number = parseInt(req.params.id, 10);
-        const { nome, idade, email } = req.body;
-
-        if (isNaN(id) || id <= 0) {
-            next(new BadRequestError("ID inválido.")); return;
-        }
+        const updatedUser = await userService.updateUserDetails(userId, email, password);
         
-        // ... (Mantenha a lógica de validação de updateData, substituindo res.status(400) por next(new BadRequestError(...)))
+        return res.status(200).json({ 
+            message: 'Perfil atualizado com sucesso.', 
+            user: updatedUser 
+        });
 
-        const updateData: Partial<UserInput> = {};
-        let isUpdateDataValid = false;
-        
-        // Validação de campos de atualização
-        if (nome !== undefined) {
-            if (typeof nome === 'string' && nome.trim() !== "") {
-                updateData.nome = nome;
-                isUpdateDataValid = true;
-            } else {
-                next(new BadRequestError("O nome não pode estar vazio.")); return;
-            }
-        }
-        
-        if (idade !== undefined) {
-            if (typeof idade === 'number' && idade > 0 && Number.isInteger(idade)) {
-                updateData.idade = idade;
-                isUpdateDataValid = true;
-            } else {
-                next(new BadRequestError("A idade deve ser um número inteiro positivo.")); return;
-            }
-        }
-        
-        if (email !== undefined) {
-            if (typeof email === 'string' && email.includes('@') && email.trim().length >= 5) {
-                updateData.email = email;
-                isUpdateDataValid = true;
-            } else {
-                next(new BadRequestError("O email deve ser um formato válido.")); return;
-            }
-        }
-
-        if (!isUpdateDataValid) {
-            next(new BadRequestError("Nenhum dado válido para atualizar foi fornecido.")); return;
-        }
-
-        try {
-            const userAtualizado = await userService.updateUser(id, updateData);
-            res.json(userAtualizado);
-        } catch (error) {
-            next(error); // Erros NotFound ou Conflict vêm do Service.
-        }
-    },
-
-    // DELETE
-    async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
-        const id: number = parseInt(req.params.id, 10);
-
-        if (isNaN(id) || id <= 0) {
-            next(new BadRequestError("ID inválido.")); return;
-        }
-        
-        try {
-            await userService.deleteUser(id);
-            res.status(204).send(); 
-        } catch (error) {
-            next(error); // Erros NotFound vêm do Service.
-        }
+    } catch (error) {
+        next(error);
     }
-};
+}
 
-export default userController;
+// ----------------------------------------------------------------
+// ATUALIZADO: Lógica de Busca (GET /users/:id)
+// ----------------------------------------------------------------
+export async function getProfile(req: Request, res: Response, next: NextFunction) {
+    try {
+        const userId = req.user!.id; // Pega o ID do usuário injetado pelo middleware 'authenticate'
+        
+        const user = await userService.getUserById(userId);
+
+        // Remove dados sensíveis ou desnecessários antes de enviar ao cliente
+        const { id, email, isAdmin } = user;
+        
+        return res.status(200).json({ id, email, isAdmin });
+
+    } catch (error) {
+        next(error);
+    }
+}

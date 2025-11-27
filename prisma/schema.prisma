@@ -1,8 +1,4 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// Adicione esta nova tabela para a chave de administrador
 
 generator client {
   provider = "prisma-client-js"
@@ -14,19 +10,28 @@ datasource db {
   url       = env("DATABASE_URL")
 }
 
+model AdminConfig {
+  id           Int    @id @default(1)
+  adminKeyHash String
+}
+
 model User {
-  id    Int     @id @default(autoincrement())
-  nome  String  
-  idade Int
-  email String @unique
-  
+  id       Int     @id @default(autoincrement())
+  email    String  @unique
+  password String  @default("TEMPORARY_PASSWORD_NEEDS_HASH")
+  isAdmin  Boolean @default(false) // NOVO: Campo para identificar Admins
+  // ... outros campos de usuário
+
   @@map("users")
 }
 
 model Card {
-  id Int @id @default(autoincrement())
-  imagem String
-  tipo String
-  nivel Int
-  classe String
+  id                Int     @id @default(autoincrement())
+  nome              String  @default("Nome")
+  imagem            String  // URL da imagem mascarada/misteriosa
+  imagemRevelada    String  @default("URL Placeholder")
+  tipo              String
+  nivel             Int
+  classe            String  // Mapeado do "Atributo" do Front-end
+  // ... outros campos de card
 }

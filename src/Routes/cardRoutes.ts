@@ -1,23 +1,23 @@
-import { Router } from "express";
-import cardController from "../Controllers/cardController"; // Importa o Controller de Cards
+import { Router } from 'express';
+import * as cardController from '../Controllers/cardController';
+import { authenticate, isAdmin } from '../middleware/authMiddleware'; // NOVO IMPORT
 
 const router = Router();
 
-// Mapeamento das rotas para os métodos do Controller de Cards
-//
-// GET /cards
-router.get("/", cardController.getAll);
+// GET /cards - Listar todos (Admin)
+// Front-end Admin: GET /cards
+router.get('/', authenticate, isAdmin, cardController.getAllCards);
 
-// GET /cards/:id
-router.get("/:id", cardController.getById);
+// POST /cards - Criar novo card (Admin)
+// Front-end Admin: POST /cards
+router.post('/', authenticate, isAdmin, cardController.createCard);
 
-// POST /cards
-router.post("/", cardController.create);
+// PUT /cards/:id - Editar card (Admin)
+// Front-end Admin: PUT /cards/:id
+router.put('/:id', authenticate, isAdmin, cardController.updateCard);
 
-// PUT /cards/:id
-router.put("/:id", cardController.update);
-
-// DELETE /cards/:id
-router.delete("/:id", cardController.delete);
+// DELETE /cards/:id - Excluir card (Admin)
+// Front-end Admin: DELETE /cards/:id
+router.delete('/:id', authenticate, isAdmin, cardController.deleteCard);
 
 export default router;
