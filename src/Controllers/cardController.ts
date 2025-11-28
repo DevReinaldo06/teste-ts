@@ -1,22 +1,53 @@
-// Conteúdo anterior + adição do middleware 'isAdmin' para as rotas de Admin
+// src/Controllers/cardController.ts
 
 import { Request, Response, NextFunction } from 'express';
 import * as cardService from '../Services/cardService';
 import { BadRequestError, NotFoundError } from '../errors/ApiError';
 
-// ⚠️ Se o seu CardController original tiver estes métodos, use esta estrutura:
+// Interface para os dados que o corpo da requisição de criação/atualização pode ter
+interface CardInput {
+    nome?: string;
+    imagem?: string;
+    imagemRevelada?: string;
+    tipo?: string;
+    nivel?: number;
+    classe?: string;
+}
 
-// POST /cards
-export async function createCard(req: Request, res: Response, next: NextFunction) {
-    // ... lógica de criação (com novas colunas 'imagemRevelada' se necessário)
+// ----------------------------------------------------------------
+// 1. GET /cards (Listar todos os cards)
+// ----------------------------------------------------------------
+// Requer Admin para ser usado na rota /cards
+export async function getAllCards(req: Request, res: Response, next: NextFunction) {
     try {
-        const { nome, imagem, imagemRevelada, tipo, nivel, classe } = req.body; // NOVO: imagemRevelada
+        const cards = await cardService.getAllCards(); // Função que criamos no Service
+        return res.status(200).json(cards);
+    } catch (error) {
+        next(error);
+    }
+}
 
-        if (!nome || !imagem || !imagemRevelada || !tipo || !nivel || !classe) {
-            throw new BadRequestError('Todos os campos (nome, imagem, imagemRevelada, tipo, nivel, classe) são obrigatórios.');
+// ----------------------------------------------------------------
+// 2. POST /cards (Criar novo card)
+// ----------------------------------------------------------------
+// Requer Admin
+export async function createCard(req: Request, res: Response, next: NextFunction) {
+    try {
+        const { nome, imagem, imagemRevelada, tipo, nivel, classe } = req.body as CardInput;
+
+        // Verifica campos obrigatórios para criação
+        if (!nome || !imagem || !imagemRevelada || !tipo || nivel === undefined || !classe) {
+            throw new BadRequestError('Todos os campos (nome, imagem, imagemRevelada, tipo, nivel, classe) são obrigatórios para criar um card.');
         }
 
-        const newCard = await cardService.createCard({ nome, imagem, imagemRevelada, tipo, nivel, classe });
+        const newCard = await cardService.createCard({ 
+            nome, 
+            imagem, 
+            imagemRevelada, 
+            tipo, 
+            nivel: Number(nivel), // Garante que o nível é um número
+            classe 
+        });
         
         return res.status(201).json(newCard);
 
@@ -25,33 +56,25 @@ export async function createCard(req: Request, res: Response, next: NextFunction
     }
 }
 
-// GET /cards
-export async function getAllCards(req: Request, res: Response, next: NextFunction) {
-    // ... lógica de listagem (não precisa de isAdmin aqui se a rota GET for pública, mas Admin só lista)
-    try {
-        const cards = await cardService.getAllCards();
-        return res.status(200).json(cards);
-    } catch (error) {
-        next(error);
-    }
-}
-
-// PUT /cards/:id
+// ----------------------------------------------------------------
+// 3. PUT /cards/:id (Atualizar card)
+// ----------------------------------------------------------------
+// Requer Admin
 export async function updateCard(req: Request, res: Response, next: NextFunction) {
-    // ... lógica de atualização
     try {
         const id = parseInt(req.params.id);
-        const { nome, imagem, imagemRevelada, tipo, nivel, classe } = req.body; // NOVO: imagemRevelada
-        
+        const updateData: CardInput = req.body;
+
         if (isNaN(id)) {
-            throw new BadRequestError('O ID da carta deve ser um número válido.');
+            throw new BadRequestError('O ID do card deve ser um número válido.');
+        }
+        
+        // Se nivel for fornecido, garanta que é um número
+        if (updateData.nivel !== undefined) {
+             updateData.nivel = Number(updateData.nivel);
         }
 
-        if (!nome || !imagem || !imagemRevelada || !tipo || !nivel || !classe) {
-            throw new BadRequestError('Todos os campos são obrigatórios para a atualização.');
-        }
-
-        const updatedCard = await cardService.updateCard(id, { nome, imagem, imagemRevelada, tipo, nivel, classe });
+        const updatedCard = await cardService.updateCard(id, updateData);
         
         return res.status(200).json(updatedCard);
 
@@ -60,17 +83,19 @@ export async function updateCard(req: Request, res: Response, next: NextFunction
     }
 }
 
-// DELETE /cards/:id
+// ----------------------------------------------------------------
+// 4. DELETE /cards/:id (Excluir card)
+// ----------------------------------------------------------------
+// Requer Admin
 export async function deleteCard(req: Request, res: Response, next: NextFunction) {
-    // ... lógica de exclusão
     try {
         const id = parseInt(req.params.id);
         
         if (isNaN(id)) {
-            throw new BadRequestError('O ID da carta deve ser um número válido.');
+            throw new BadRequestError('O ID do card deve ser um número válido.');
         }
 
-        await cardService.deleteCard(id);
+        await cardService.deleteCard(id); // Função que criamos no Service
         
         return res.status(204).send(); // 204 No Content
 

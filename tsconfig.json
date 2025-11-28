@@ -1,18 +1,29 @@
 {
   "compilerOptions": {
-      "target": "es6", // Versão do JavaScript de saída
-      "module": "commonjs", // Sistema de módulos
-      "rootDir": "./src", // Onde nosso código .ts estará
-      "outDir": "./dist", // Onde o JavaScript compilado será salvo
-      "esModuleInterop": true, // Permite compatibilidade entre módulos CommonJS e ES
-      "forceConsistentCasingInFileNames": true,
-      "strict": true, // Habilita todas as checagens de tipo estritas
-      "skipLibCheck": true
-    },
-    "exclude": [
-      "node_modules",
-      "dist",
-      "prisma.config.ts"
-    ]
+    // 💡 Versão moderna: es2020 é geralmente melhor que es6 para Node.js recente
+    "target": "es2020", 
+    "module": "commonjs",
+    
+    // 🎯 Diretórios: Mantidos como estavam (Backend)
+    "rootDir": "./src", 
+    "outDir": "./dist",
+    
+    // Configurações de Módulos e Strictness
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true, // Habilita checagens estritas (mantido do primeiro JSON)
+    "skipLibCheck": true
+  },
+  "include": [
+    // 🎯 Inclui explicitamente apenas o código-fonte
+    "./src/**/*"
+  ],
+  "exclude": [
+    // 🎯 Consolida todas as exclusões importantes
+    "node_modules",
+    "dist",
+    "prisma.config.ts", // Mantido da primeira configuração
+    // ⚠️ Se o erro original persistir, adicione "frontend" aqui também
+    // "frontend"
+  ]
 }
-  

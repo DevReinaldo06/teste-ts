@@ -1,8 +1,7 @@
-// Conteúdo anterior + lógica de hash e validação
-
 import prisma from '../db/prisma';
 import { NotFoundError, ConflictError } from '../errors/ApiError';
-import { hashPassword, comparePassword } from '../utils/bcrypt'; // NOVO IMPORT
+import { hashPassword, comparePassword } from '../utils/bcrypt';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library'; // Import OK
 
 // Interface para o usuário sem a senha (o Prisma já faz isso, mas é bom para tipagem)
 interface UserData {
@@ -13,25 +12,26 @@ interface UserData {
 }
 
 // ----------------------------------------------------------------
-// ⚠️ NOVO: Lógica de Cadastro (POST /users)
+// Lógica de Cadastro (POST /users)
 // ----------------------------------------------------------------
 export async function registerUser(email: string, password: string): Promise<UserData> {
     try {
-        const hashedPassword = await hashPassword(password); // Hash da senha
-
         const newUser = await prisma.user.create({
             data: {
                 email,
-                password: hashedPassword,
+                password: await hashPassword(password), // Hash da senha
                 // O novo usuário é sempre criado como não-admin (isAdmin: false)
             },
             select: { id: true, email: true, isAdmin: true }
         });
         return newUser;
     } catch (error) {
-        // P2002: Unique constraint violation (Email duplicado)
-        if (error.code === 'P2002') {
-            throw new ConflictError('Este e-mail já está cadastrado. Por favor, faça login ou use outro e-mail.');
+        // ✅ CORREÇÃO: Type Guard para o erro 'unknown'
+        if (error instanceof PrismaClientKnownRequestError) {
+            // P2002: Unique constraint violation (Email duplicado)
+            if (error.code === 'P2002') {
+                throw new ConflictError('Este e-mail já está cadastrado. Por favor, faça login ou use outro e-mail.');
+            }
         }
         throw error;
     }
@@ -81,17 +81,19 @@ export async function updateUserDetails(userId: number, email?: string, password
         });
         return updatedUser;
     } catch (error) {
-        // P2025: Record not found (Usuário não existe)
-        if (error.code === 'P2025') {
-            throw new NotFoundError('Não foi possível atualizar. Usuário não encontrado.');
+        // ✅ CORREÇÃO: Type Guard para o erro 'unknown'
+        if (error instanceof PrismaClientKnownRequestError) {
+            // P2025: Record not found (Usuário não existe)
+            if (error.code === 'P2025') {
+                throw new NotFoundError('Não foi possível atualizar. Usuário não encontrado.');
+            }
         }
         throw error;
     }
 }
 
 // ----------------------------------------------------------------
-// OUTRAS FUNÇÕES EXISTENTES (GET /users/:id, etc.)
-// MANTIDAS INALTERADAS SE VOCÊ JÁ AS TINHA, mas precisam do 'authenticate' no Controller.
+// BUSCA: Buscar um usuário por ID
 // ----------------------------------------------------------------
 export async function getUserById(userId: number): Promise<UserData> {
     const user = await prisma.user.findUnique({
@@ -103,4 +105,34 @@ export async function getUserById(userId: number): Promise<UserData> {
         throw new NotFoundError('Usuário não encontrado.');
     }
     return user;
+}
+
+// ----------------------------------------------------------------
+// ➕ NOVO: Listagem de Usuários (GET /users)
+// ----------------------------------------------------------------
+export async function getAllUsers(): Promise<UserData[]> {
+    // Retorna todos os usuários (sem senha)
+    const users = await prisma.user.findMany({
+        select: { id: true, email: true, isAdmin: true }
+    });
+    return users;
+}
+
+// ----------------------------------------------------------------
+// ➕ NOVO: Exclusão de Usuário (DELETE /users/:id)
+// ----------------------------------------------------------------
+export async function deleteUser(userId: number): Promise<void> {
+    try {
+        await prisma.user.delete({
+            where: { id: userId }
+        });
+    } catch (error) {
+        // ✅ TRATAMENTO DE ERRO: P2025 para registro não encontrado
+        if (error instanceof PrismaClientKnownRequestError) {
+            if (error.code === 'P2025') {
+                throw new NotFoundError('Usuário não encontrado para exclusão.');
+            }
+        }
+        throw error;
+    }
 }

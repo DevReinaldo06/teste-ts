@@ -3,23 +3,26 @@
 generator client {
   provider = "prisma-client-js"
   engineType = "binary" // Manter para estabilidade do tsx
+  // ✅ CORREÇÃO 1: 'binaryTargets' deve estar aqui.
+  binaryTargets = ["native", "debian-openssl-1.1.x"] 
 }
 
 datasource db {
   provider = "postgresql"
-  url       = env("DATABASE_URL")
+  url      = env("DATABASE_URL")
+  // ❌ CORREÇÃO 2: Removido 'binaryTargets' daqui para resolver o P1012.
 }
 
 model AdminConfig {
-  id           Int    @id @default(1)
-  adminKeyHash String
+  id              Int     @id @default(1)
+  adminKeyHash    String
 }
 
 model User {
-  id       Int     @id @default(autoincrement())
-  email    String  @unique
-  password String  @default("TEMPORARY_PASSWORD_NEEDS_HASH")
-  isAdmin  Boolean @default(false) // NOVO: Campo para identificar Admins
+  id        Int     @id @default(autoincrement())
+  email     String  @unique
+  password  String  @default("TEMPORARY_PASSWORD_NEEDS_HASH")
+  isAdmin   Boolean @default(false) // NOVO: Campo para identificar Admins
   // ... outros campos de usuário
 
   @@map("users")

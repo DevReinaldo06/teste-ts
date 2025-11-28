@@ -3,6 +3,7 @@ import app from './app';
 import prisma from './db/prisma'; 
 import swaggerUi from 'swagger-ui-express'; 
 import swaggerSpec from './Routes/swaggerConfig'; // Assumindo que você tem este arquivo
+import cors from 'cors';
 
 const port: number = Number(process.env.PORT) || 3000;
 

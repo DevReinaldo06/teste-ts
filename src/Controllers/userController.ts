@@ -1,12 +1,12 @@
-// Conteúdo anterior + novos métodos
-
 import { Request, Response, NextFunction } from 'express';
 import * as userService from '../Services/userService';
-import { BadRequestError, NotFoundError } from '../errors/ApiError'; // Adiciona NotFoundError
+import { BadRequestError, NotFoundError } from '../errors/ApiError';
 
 // ----------------------------------------------------------------
-// ⚠️ NOVO: Lógica de Cadastro (POST /users)
+// Funções de Usuário Padrão (Ex: /users/me, /register)
 // ----------------------------------------------------------------
+
+// POST /users/register ou POST /auth/register
 export async function register(req: Request, res: Response, next: NextFunction) {
     try {
         const { email, password } = req.body;
@@ -15,14 +15,12 @@ export async function register(req: Request, res: Response, next: NextFunction) 
             throw new BadRequestError('E-mail e senha são obrigatórios para o cadastro.');
         }
         
-        // Validação básica de formato de senha (opcional)
         if (password.length < 6) {
-             throw new BadRequestError('A senha deve ter pelo menos 6 caracteres.');
+            throw new BadRequestError('A senha deve ter pelo menos 6 caracteres.');
         }
 
         const newUser = await userService.registerUser(email, password);
         
-        // Retorna 201 Created
         return res.status(201).json({ 
             message: 'Usuário cadastrado com sucesso. Por favor, faça login.', 
             user: newUser 
@@ -33,22 +31,36 @@ export async function register(req: Request, res: Response, next: NextFunction) 
     }
 }
 
+// GET /users/me (Buscar o próprio perfil)
+export async function getProfile(req: Request, res: Response, next: NextFunction) {
+    try {
+        // Assume que o ID foi injetado pelo middleware de autenticação
+        const userId = req.user!.id; 
+        
+        const user = await userService.getUserById(userId);
 
-// ----------------------------------------------------------------
-// ATUALIZADO: Lógica de Atualização (PUT /users/:id)
-// ----------------------------------------------------------------
+        const { id, email, isAdmin } = user;
+        
+        return res.status(200).json({ id, email, isAdmin });
+
+    } catch (error) {
+        next(error);
+    }
+}
+
+// PUT /users/me (Atualizar o próprio perfil)
 export async function updateProfile(req: Request, res: Response, next: NextFunction) {
     try {
         const { email, password } = req.body;
-        // Pega o ID do usuário injetado pelo middleware 'authenticate'
+        // Assume que o ID foi injetado pelo middleware de autenticação
         const userId = req.user!.id; 
-
-        // Adiciona validação de que o ID do token é o mesmo que o ID da rota (se usar /users/:id)
-        // Aqui, presumimos que a rota é /users/me, ou que o usuário só edita a si mesmo.
-        // Se a rota fosse /users/:id, seria necessário verificar se o usuário é Admin.
 
         if (!email && !password) {
             throw new BadRequestError('Nenhum dado fornecido para atualização. Forneça e-mail ou senha.');
+        }
+
+        if (password && password.length < 6) {
+             throw new BadRequestError('A nova senha deve ter pelo menos 6 caracteres.');
         }
 
         const updatedUser = await userService.updateUserDetails(userId, email, password);
@@ -64,19 +76,51 @@ export async function updateProfile(req: Request, res: Response, next: NextFunct
 }
 
 // ----------------------------------------------------------------
-// ATUALIZADO: Lógica de Busca (GET /users/:id)
+// Funções Administrativas (Requerem 'isAdmin' e usam o ID da Rota)
 // ----------------------------------------------------------------
-export async function getProfile(req: Request, res: Response, next: NextFunction) {
+
+// GET /users (Listar todos os usuários)
+// 💡 NOVO: Implementação para listar todos (Requer userService.getAllUsers)
+export async function getAll(req: Request, res: Response, next: NextFunction) {
     try {
-        const userId = req.user!.id; // Pega o ID do usuário injetado pelo middleware 'authenticate'
-        
-        const user = await userService.getUserById(userId);
+        const users = await userService.getAllUsers(); 
+        return res.status(200).json(users);
+    } catch (error) {
+        next(error);
+    }
+}
 
-        // Remove dados sensíveis ou desnecessários antes de enviar ao cliente
-        const { id, email, isAdmin } = user;
-        
-        return res.status(200).json({ id, email, isAdmin });
+// GET /users/:id (Buscar qualquer usuário por ID)
+// 💡 NOVO: Implementação para buscar por ID (Requer userService.getUserById)
+export async function getById(req: Request, res: Response, next: NextFunction) {
+    try {
+        const id = parseInt(req.params.id);
+        if (isNaN(id)) {
+            throw new BadRequestError('O ID do usuário deve ser um número válido.');
+        }
 
+        const user = await userService.getUserById(id); 
+        
+        const { id: userId, email, isAdmin } = user;
+        
+        return res.status(200).json({ id: userId, email, isAdmin });
+
+    } catch (error) {
+        next(error);
+    }
+}
+
+// DELETE /users/:id (Excluir usuário)
+// 💡 NOVO: Implementação para exclusão (Requer userService.deleteUser)
+export async function deleteUser(req: Request, res: Response, next: NextFunction) {
+    try {
+        const id = parseInt(req.params.id);
+        if (isNaN(id)) {
+            throw new BadRequestError('O ID do usuário deve ser um número válido.');
+        }
+
+        await userService.deleteUser(id); 
+        return res.status(204).send(); // 204 No Content
     } catch (error) {
         next(error);
     }
