@@ -1,26 +1,38 @@
 /* index.css 
-    Este ficheiro contém as diretivas do Tailwind CSS 
-    e estilos base que você queria aplicar globalmente.
+   Este ficheiro contém as diretivas do Tailwind CSS 
+   e estilos base que você queria aplicar globalmente.
 */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-/* Estilos personalizados para o corpo da aplicação */
+/* -------------------------
+   ESTILOS GLOBAIS (compatível v4)
+-------------------------- */
+
+/* Fonte padrão */
 body {
-    font-family: 'Inter', sans-serif;
-    @apply bg-gray-50 text-gray-800 antialiased;
+  font-family: 'Inter', sans-serif;
+
+  /* Tailwind v4 usa design tokens CSS */
+  background-color: var(--color-gray-50);
+  color: var(--color-gray-800);
+
+  /* antialiasing */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Garante que o container raiz ocupe a altura total */
+/* O root ocupa a tela inteira + padding */
 #root {
-    @apply min-h-screen p-4 sm:p-8;
+  min-height: 100vh;
+  padding: 1rem;
+
+  /* sm:p-8 → YOUR RESPONSIVE UTILITIES NEED TO GO INLINE IN JSX */
 }
 
-/* Animação simples de fade in para componentes */
+/* Animação simples */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .fade-in {

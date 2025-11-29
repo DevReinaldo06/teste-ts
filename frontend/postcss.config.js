@@ -1,9 +1,9 @@
-// postcss.config.js (Versão Legada/Requerida pelo Seu Ambiente)
+// postcss.config.js (FINALMENTE CORRIGIDO)
 
 export default {
   plugins: {
-      // CORREÇÃO: Usar o nome de plugin legado conforme o erro solicita
-      '@tailwindcss/postcss': {}, 
-      autoprefixer: {},
+    // Reverter para o nome que o seu ambiente exige
+    '@tailwindcss/postcss': {},
+    'autoprefixer': {},
   },
 }

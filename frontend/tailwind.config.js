@@ -1,10 +1,9 @@
-// frontend/tailwind.config.js
+// tailwind.config.js
 
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
-    // ESSENCIAL: Diz ao Tailwind para procurar classes em todos os arquivos
-    // .html, .js, .ts, .jsx, e .tsx dentro da pasta src/
+    // ESSENCIAL: Garante que o Tailwind procure classes em todos os seus componentes
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
