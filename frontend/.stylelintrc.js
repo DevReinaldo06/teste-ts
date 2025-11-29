@@ -1,13 +1,13 @@
 // frontend/.stylelintrc.js
 
 module.exports = {
-  // Configurações padrão e o plugin para Tailwind
   extends: [
     'stylelint-config-standard',
-    'stylelint-config-tailwindcss', // ESSENCIAL para reconhecer @apply
+    // Pacote essencial para reconhecer a sintaxe do Tailwind
+    'stylelint-config-tailwindcss',
   ],
   rules: {
-    // Permite explicitamente o uso de @apply, @tailwind, etc., sem avisos
+    // Permite explicitamente as regras internas do Tailwind, como @apply e @tailwind
     'at-rule-no-unknown': [true, {
       ignoreAtRules: [
         'tailwind',
@@ -17,7 +17,6 @@ module.exports = {
         'layer'
       ]
     }],
-    // Desativa a verificação de funções que o Tailwind pode adicionar
     'function-no-unknown': null,
   },
 };

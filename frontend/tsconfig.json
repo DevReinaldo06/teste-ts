@@ -1,4 +1,4 @@
-// /home/user/teste-ts-projeto/frontend/tsconfig.json
+// /home/user/teste-ts-projeto/frontend/tsconfig.json (CÓDIGO CORRIGIDO)
 {
   "compilerOptions": {
     "target": "es2020",
@@ -10,13 +10,21 @@
     "strict": true,
     "skipLibCheck": true,
     
-    // 🎯 Define o escopo do Frontend
+    // ===================================
+    // 🎯 CORREÇÃO CRÍTICA PARA VITE E TIPOS
+    // ===================================
+    // 🚫 REMOVEMOS A PROPRIEDADE "types"
+    "typeRoots": ["./node_modules/@types", "./src/types"], // Garante que procure em node_modules
     "rootDir": "./src"
   },
   "include": [
-    // 🎯 Inclui o código do Frontend
     "./src/**/*.ts", 
-    "./src/**/*.tsx"
+    "./src/**/*.tsx",
+    "vite.config.js",
+    
+    // ✅ Adicionar esta linha para incluir o arquivo de tipos gerado pelo Vite, 
+    // geralmente chamado vite-env.d.ts (ou similar na raiz do src)
+    "./src/vite-env.d.ts" 
   ],
   "exclude": [
     "node_modules"
