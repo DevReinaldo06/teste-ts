@@ -1,23 +1,15 @@
 import { Router } from 'express';
 import * as cardController from '../Controllers/cardController';
-import { authenticate, isAdmin } from '../middleware/authMiddleware'; // NOVO IMPORT
+import { authenticate, isAdmin } from '../middleware/authMiddleware'; // Ajuste de diretório
+import { validate } from '../middleware/validationMiddleware'; // NOVO IMPORT
+import { cardSchema } from '../schemas/cardSchema'; // NOVO IMPORT
 
 const router = Router();
 
-// GET /cards - Listar todos (Admin)
-// Front-end Admin: GET /cards
+// Rotas de CRUD Admin (protegidas por Auth e Admin)
 router.get('/', authenticate, isAdmin, cardController.getAllCards);
-
-// POST /cards - Criar novo card (Admin)
-// Front-end Admin: POST /cards
-router.post('/', authenticate, isAdmin, cardController.createCard);
-
-// PUT /cards/:id - Editar card (Admin)
-// Front-end Admin: PUT /cards/:id
-router.put('/:id', authenticate, isAdmin, cardController.updateCard);
-
-// DELETE /cards/:id - Excluir card (Admin)
-// Front-end Admin: DELETE /cards/:id
+router.post('/', authenticate, isAdmin, validate(cardSchema), cardController.createCard); // ⬅️ Adiciona Validação
+router.put('/:id', authenticate, isAdmin, validate(cardSchema), cardController.updateCard); // ⬅️ Adiciona Validação
 router.delete('/:id', authenticate, isAdmin, cardController.deleteCard);
 
 export default router;

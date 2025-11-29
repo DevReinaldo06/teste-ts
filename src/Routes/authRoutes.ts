@@ -1,22 +1,15 @@
 import { Router } from 'express';
-import * as userController from '../Controllers/userController';
-import { authenticate } from '../middleware/authMiddleware';
+import * as authController from '../Controllers/authController';
+import { validate } from '../middleware/validationMiddleware'; // NOVO IMPORT
+import { loginSchema } from '../schemas/userSchema'; // NOVO IMPORT
 
 const router = Router();
 
-// ⚠️ NOVO: Rota para Cadastro de Usuário (POST /users)
-// Front-end: POST /users (ou via /auth/register que chama a lógica interna)
-router.post('/', userController.register);
+// Rota para login de usuários normais e admins
+// Front-end: POST /auth/login
+router.post('/login', validate(loginSchema), authController.login); // ⬅️ Adiciona Validação
 
-// Rota para o perfil (GET /users/me) - Requer autenticação
-// Front-end: GET /users/:id
-router.get('/me', authenticate, userController.getProfile);
-
-// Rota para alterar o perfil (PUT /users/me) - Requer autenticação
-// Front-end: PUT /users/:id
-router.put('/me', authenticate, userController.updateProfile);
-
-// Rota de exclusão (DELETE /users/:id) - Se for permitir a auto-exclusão
-// router.delete('/me', authenticate, userController.deleteUser); 
+// Rota opcional para checagem da chave de admin
+router.post('/admin-key', authController.adminLogin);
 
 export default router;

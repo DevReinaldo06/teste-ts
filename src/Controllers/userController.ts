@@ -1,24 +1,21 @@
 import { Request, Response, NextFunction } from 'express';
-import * as userService from '../Services/userService';
+// Use os services específicos para cada camada
+import * as userService from '../Services/userService'; // Para ações do próprio usuário (perfil)
+import * as adminUserService from '../Services/adminUserService'; // Para ações administrativas (CRUD)
 import { BadRequestError, NotFoundError } from '../errors/ApiError';
 
 // ----------------------------------------------------------------
-// Funções de Usuário Padrão (Ex: /users/me, /register)
+// 👤 Funções de Usuário Padrão (/users/register e /users/me)
 // ----------------------------------------------------------------
 
-// POST /users/register ou POST /auth/register
+/**
+ * 📝 POST /users - Registra um novo usuário.
+ * A validação é feita pelo Zod Middleware na camada de Rota.
+ */
 export async function register(req: Request, res: Response, next: NextFunction) {
     try {
         const { email, password } = req.body;
-
-        if (!email || !password) {
-            throw new BadRequestError('E-mail e senha são obrigatórios para o cadastro.');
-        }
         
-        if (password.length < 6) {
-            throw new BadRequestError('A senha deve ter pelo menos 6 caracteres.');
-        }
-
         const newUser = await userService.registerUser(email, password);
         
         return res.status(201).json({ 
@@ -31,10 +28,13 @@ export async function register(req: Request, res: Response, next: NextFunction) 
     }
 }
 
-// GET /users/me (Buscar o próprio perfil)
+/**
+ * 🔍 GET /users/me - Busca o perfil do usuário logado.
+ * Requer autenticação (middleware 'authenticate').
+ */
 export async function getProfile(req: Request, res: Response, next: NextFunction) {
     try {
-        // Assume que o ID foi injetado pelo middleware de autenticação
+        // ID injetado pelo middleware de autenticação
         const userId = req.user!.id; 
         
         const user = await userService.getUserById(userId);
@@ -48,21 +48,18 @@ export async function getProfile(req: Request, res: Response, next: NextFunction
     }
 }
 
-// PUT /users/me (Atualizar o próprio perfil)
+/**
+ * ✏️ PUT /users/me - Atualiza o perfil do usuário logado.
+ * A validação é feita pelo Zod Middleware na camada de Rota.
+ * Requer autenticação.
+ */
 export async function updateProfile(req: Request, res: Response, next: NextFunction) {
     try {
         const { email, password } = req.body;
-        // Assume que o ID foi injetado pelo middleware de autenticação
         const userId = req.user!.id; 
 
-        if (!email && !password) {
-            throw new BadRequestError('Nenhum dado fornecido para atualização. Forneça e-mail ou senha.');
-        }
-
-        if (password && password.length < 6) {
-             throw new BadRequestError('A nova senha deve ter pelo menos 6 caracteres.');
-        }
-
+        // O Zod Schema (updateProfileSchema) garante que email OU password existam e sejam válidos.
+        
         const updatedUser = await userService.updateUserDetails(userId, email, password);
         
         return res.status(200).json({ 
@@ -75,23 +72,30 @@ export async function updateProfile(req: Request, res: Response, next: NextFunct
     }
 }
 
+// ---
+
 // ----------------------------------------------------------------
-// Funções Administrativas (Requerem 'isAdmin' e usam o ID da Rota)
+// 👑 Funções Administrativas (Rotas /admin/users)
 // ----------------------------------------------------------------
 
-// GET /users (Listar todos os usuários)
-// 💡 NOVO: Implementação para listar todos (Requer userService.getAllUsers)
+/**
+ * 📋 GET /admin/users - Lista todos os usuários.
+ * Requer autenticação e permissão de administrador ('isAdmin').
+ */
 export async function getAll(req: Request, res: Response, next: NextFunction) {
     try {
-        const users = await userService.getAllUsers(); 
+        // ⬅️ CORRIGIDO: Usa o adminUserService
+        const users = await adminUserService.getAllUsersForAdmin(); 
         return res.status(200).json(users);
     } catch (error) {
         next(error);
     }
 }
 
-// GET /users/:id (Buscar qualquer usuário por ID)
-// 💡 NOVO: Implementação para buscar por ID (Requer userService.getUserById)
+/**
+ * 🔎 GET /admin/users/:id - Busca qualquer usuário por ID.
+ * Requer autenticação e permissão de administrador.
+ */
 export async function getById(req: Request, res: Response, next: NextFunction) {
     try {
         const id = parseInt(req.params.id);
@@ -99,6 +103,7 @@ export async function getById(req: Request, res: Response, next: NextFunction) {
             throw new BadRequestError('O ID do usuário deve ser um número válido.');
         }
 
+        // Usa o serviço padrão para buscar por ID (que omite o hash da senha)
         const user = await userService.getUserById(id); 
         
         const { id: userId, email, isAdmin } = user;
@@ -110,8 +115,10 @@ export async function getById(req: Request, res: Response, next: NextFunction) {
     }
 }
 
-// DELETE /users/:id (Excluir usuário)
-// 💡 NOVO: Implementação para exclusão (Requer userService.deleteUser)
+/**
+ * 🗑️ DELETE /admin/users/:id - Exclui um usuário.
+ * Requer autenticação e permissão de administrador.
+ */
 export async function deleteUser(req: Request, res: Response, next: NextFunction) {
     try {
         const id = parseInt(req.params.id);
@@ -119,7 +126,8 @@ export async function deleteUser(req: Request, res: Response, next: NextFunction
             throw new BadRequestError('O ID do usuário deve ser um número válido.');
         }
 
-        await userService.deleteUser(id); 
+        // ⬅️ CORRIGIDO: Usa o adminUserService
+        await adminUserService.deleteUser(id); 
         return res.status(204).send(); // 204 No Content
     } catch (error) {
         next(error);

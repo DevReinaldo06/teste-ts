@@ -1,17 +1,18 @@
-// src/Routes/userRoutes.ts
-
-import { Router } from "express";
-// ✅ CORREÇÃO: Importa todas as exportações nomeadas como um objeto
-import * as userController from "../Controllers/userController"; 
+import { Router } from 'express';
+import * as userController from '../Controllers/userController';
+import { authenticate } from '../middleware/authMiddleware'; // Ajuste de diretório
+import { validate } from '../middleware/validationMiddleware'; // NOVO IMPORT
+import { registerSchema, updateProfileSchema } from '../schemas/userSchema'; // NOVO IMPORT
 
 const router = Router();
 
-// Mapeamento das rotas para os métodos do Controller
-router.get("/", userController.getAll);
-router.get("/:id", userController.getById);
-router.post("/", userController.register);
-router.put("/:id", userController.updateProfile);
-// ✅ CORREÇÃO: Usa o nome 'deleteUser' que criamos no Controller/Service
-router.delete("/:id", userController.deleteUser); 
+// POST /users - Cadastro de Usuário
+router.post('/', validate(registerSchema), userController.register); // ⬅️ Adiciona Validação
+
+// Rota para o perfil (GET /users/me) - Requer autenticação
+router.get('/me', authenticate, userController.getProfile);
+
+// Rota para alterar o perfil (PUT /users/me) - Requer autenticação
+router.put('/me', authenticate, validate(updateProfileSchema), userController.updateProfile); // ⬅️ Adiciona Validação
 
 export default router;

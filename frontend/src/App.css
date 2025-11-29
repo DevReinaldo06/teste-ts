@@ -1,42 +1,18 @@
-#root {
-  max-width: 1280px;
+/* App.css 
+    Num projeto Tailwind, este ficheiro é frequentemente opcional 
+    ou reservado para estilos que não podem ser expressos com classes Tailwind.
+    Aqui, ele define um layout de grade para o contêiner principal.
+*/
+.app-container {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem; /* gap-6 no Tailwind */
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+@media (min-width: 1024px) { /* Breakpoint lg: no Tailwind */
+  .app-container {
+      grid-template-columns: 1fr 2fr;
   }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
 }
