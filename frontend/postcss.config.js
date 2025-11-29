@@ -1,7 +1,9 @@
+// frontend/postcss.config.js (Versão Moderna, Padrão Vite)
+
 export default {
-    plugins: {
-      // Estas configurações são essenciais para que o Tailwind e o Autoprefixer funcionem
-      '@tailwindcss/postcss': {},
+  plugins: {
+      // CORREÇÃO: Usar 'tailwindcss' simples
+      tailwindcss: {}, 
       autoprefixer: {},
-    },
-  }
+  },
+}
