@@ -1,40 +1,33 @@
-// Adicione esta nova tabela para a chave de administrador
-
-generator client {
-  provider = "prisma-client-js"
-  engineType = "binary" // Manter para estabilidade do tsx
-  // ✅ CORREÇÃO 1: 'binaryTargets' deve estar aqui.
-  binaryTargets = ["native", "debian-openssl-1.1.x"] 
+datasource db {
+  provider = "postgresql" // CORREÇÃO: Deve ser 'postgresql' (v6.x)
+  url      = env("DATABASE_URL")
 }
 
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-  // ❌ CORREÇÃO 2: Removido 'binaryTargets' daqui para resolver o P1012.
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ------------------------------------
+// MODELS (Se estavam faltando, adicione-os)
+// ------------------------------------
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  isAdmin   Boolean  @default(false)
 }
 
 model AdminConfig {
-  id              Int     @id @default(1)
-  adminKeyHash    String
-}
-
-model User {
-  id        Int     @id @default(autoincrement())
-  email     String  @unique
-  password  String  @default("TEMPORARY_PASSWORD_NEEDS_HASH")
-  isAdmin   Boolean @default(false) // NOVO: Campo para identificar Admins
-  // ... outros campos de usuário
-
-  @@map("users")
+  id           Int    @id @default(1)
+  adminKeyHash String
 }
 
 model Card {
-  id                Int     @id @default(autoincrement())
-  nome              String  @default("Nome")
-  imagem            String  // URL da imagem mascarada/misteriosa
-  imagemRevelada    String  @default("URL Placeholder")
-  tipo              String
-  nivel             Int
-  classe            String  // Mapeado do "Atributo" do Front-end
-  // ... outros campos de card
+  id               Int      @id @default(autoincrement())
+  nome             String
+  imagem           String
+  imagemRevelada   String
+  tipo             String
+  nivel            Int
+  classe           String
 }
