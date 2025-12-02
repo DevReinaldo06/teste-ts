@@ -8,7 +8,9 @@
       "name": "Main",
       "database": "youtube",
       "username": "user",
-      "password": "mypassword"
+      "password": "mypassword",
+      "prisma.languageServer.packageManager": "npm",
+      "prisma.languageServer.prismaPath": "node_modules/prisma"
     }
   ]
 }
