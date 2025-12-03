@@ -1,24 +1,20 @@
+// src/pages/AuthPage.tsx
+
 import React, { useState } from 'react';
-import { Firestore } from 'firebase/firestore';
-import { Auth } from 'firebase/auth';
-// Importa ADMIN_EMAIL e tipos necessários
+
+// Atualização de importações
 import { AppPage, User, ADMIN_EMAIL } from '../types/gameTypes'; 
-import { findUserByCredentials, registerUser } from '../services/dbService';
+import { loginUser, registerUser } from '../services/apiService'; 
 import { FormInput } from '../components/FormElements';
 
-// 🚨 CORREÇÃO PRINCIPAL: Definição da URL base do Backend.
-// O frontend (e.g., porta 5173) precisa saber que a API está em outra porta (3000).
-// Em um projeto real, use import.meta.env.VITE_API_BASE_URL para carregar isso de um .env.
-const API_BASE_URL = 'http://localhost:3000'; 
+// A URL base do backend é crucial para a comunicação
+const API_BASE_URL = 'http://localhost:3000';
 
 const AuthPage: React.FC<{
-  db: Firestore | null;
-  auth: Auth | null;
   setCurrentPage: (page: AppPage) => void;
   setAppMessage: (msg: string | null) => void;
   setCurrentUser: (user: User | null) => void;
-  userCollectionPath: string;
-}> = ({ db, auth, setCurrentPage, setAppMessage, setCurrentUser, userCollectionPath }) => {
+}> = ({ setCurrentPage, setAppMessage, setCurrentUser }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState(''); // Será a CHAVE DE ACESSO no modo Admin
   const [isRegisterMode, setIsRegisterMode] = useState(false);
@@ -30,76 +26,55 @@ const AuthPage: React.FC<{
     setLoading(true);
     setAppMessage(null);
 
-    if (!db) {
-      setAppMessage("Erro de inicialização do Banco de Dados.");
-      setLoading(false);
-      return;
-    }
-
     try {
       if (isAdminMode) {
         // --- Acesso Administrativo via API Segura ---
-        
+        
         // 1. Chama a rota de backend para verificar a chave de acesso (password)
-        // USANDO A URL ABSOLUTA PARA COMUNICAR COM O BACKEND
-        const response = await fetch(`${API_BASE_URL}/auth/admin-key`, { 
+        const response = await fetch(`${API_BASE_URL}/auth/admin-key`, { 
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            // Envia a chave digitada no campo 'password'
             body: JSON.stringify({ password }),
         });
 
-        let data;
-        // 2. TRATAMENTO DE ERRO JSON: Tenta parsear a resposta. 
-        // Se a API retornar um status de erro (e.g., 404, 500) sem um corpo JSON válido, 
-        // isso evita o erro 'Unexpected end of JSON input'.
-        try {
-            data = await response.json();
-        } catch (jsonError) {
-            console.warn(`Erro ao tentar ler JSON. Status: ${response.status}`);
-            // Se o status for de erro e não houver JSON, exibe uma mensagem genérica de falha.
-            if (!response.ok) {
-                setAppMessage(`Erro de comunicação (Status: ${response.status}). Verifique o console e a configuração CORS.`);
-                setLoading(false);
-                return;
-            }
-            // Caso raro: 200 OK sem JSON.
-            data = { adminKeyValid: false, message: "Resposta inesperada do servidor." };
-        }
+        let data;
+        try {
+            data = await response.json();
+        } catch (jsonError) {
+            if (!response.ok) {
+                setAppMessage(`Erro de comunicação (Status: ${response.status}). Verifique o console e a configuração CORS.`);
+                setLoading(false);
+                return;
+            }
+            data = { adminKeyValid: false, message: "Resposta inesperada do servidor." };
+        }
 
-        // 3. Verifica a resposta da API (espera 'adminKeyValid: true')
+        // 2. Verifica a resposta da API (espera 'adminKeyValid: true')
         if (response.ok && data.adminKeyValid) {
           // Sucesso: Backend confirmou a chave.
-          setCurrentUser({ id: 'admin-temp-id', email: ADMIN_EMAIL, isAdmin: true });
-          setCurrentPage(AppPage.AdminDashboard); 
+          // O ID de administrador é um placeholder, pois a API é stateless
+          setCurrentUser({ id: 'admin-temp-id', email: ADMIN_EMAIL, isAdmin: true, password: password }); 
+          setCurrentPage(AppPage.AdminDashboard); 
         } else {
-            // Falha: API retornou erro (e.g., status 400 ou 401)
           setAppMessage(data.message || "Chave de Administrador inválida ou erro na API.");
         }
       } else if (isRegisterMode) {
-        // Cadastro
-        const success = await registerUser(db, userCollectionPath, email, password);
-        if (success) {
-            setAppMessage("Cadastro realizado com sucesso! Faça login.");
-            setIsRegisterMode(false);
-            setEmail('');
-            setPassword('');
-        } else {
-            setAppMessage("Este e-mail já está cadastrado.");
-        }
-
+        // Cadastro (usando a nova função registerUser do apiService)
+        // 🎯 CORRIGIDO: Incluindo isAdmin: false para satisfazer Omit<User, "id">
+        await registerUser({ email, password, isAdmin: false });
+        setAppMessage("Cadastro realizado com sucesso! Faça login.");
+        setIsRegisterMode(false);
+        setEmail('');
+        setPassword('');
       } else {
-        // Login Comum
-        const user = await findUserByCredentials(db, userCollectionPath, email, password);
-        
-        if (user) {
-          setCurrentUser(user);
-          setCurrentPage(AppPage.MainGame);
-        } else {
-          setAppMessage("Email ou senha incorretos ou usuário não cadastrado.");
-        }
+        // Login Comum (usando a nova função loginUser do apiService)
+         // O login não precisa de isAdmin, mas se loginUser estivesse esperando Omit<User, "id">,
+         // esta linha também daria erro. Assumimos que loginUser espera apenas as credenciais.
+        const user = await loginUser({ email, password });
+        setCurrentUser(user);
+        setCurrentPage(AppPage.MainGame);
       }
     } catch (error) {
       console.error("Erro na autenticação:", error);
@@ -119,8 +94,7 @@ const AuthPage: React.FC<{
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 p-4">
       <form onSubmit={handleAuthSubmit} className="w-full max-w-md bg-white dark:bg-gray-800 p-8 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700">
         <h1 className="text-3xl font-bold mb-6 text-center text-indigo-600 dark:text-indigo-400">{getTitle()}</h1>
-        
-        {/* CAMPO EMAIL: Aparece se NÃO estiver em AdminMode */}
+        
         {(!isAdminMode) && (
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
@@ -135,7 +109,6 @@ const AuthPage: React.FC<{
           </div>
         )}
 
-        {/* CAMPO SENHA: O label é ajustado para 'Chave Admin' se estiver em AdminMode */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             {isAdminMode ? 'Chave de Acesso' : 'Senha'}
@@ -157,7 +130,7 @@ const AuthPage: React.FC<{
         >
           {loading ? 'Acessando...' : isRegisterMode ? 'Cadastrar' : 'Acessar'}
         </button>
-        
+        
         {!isRegisterMode && !isAdminMode && (
           <div className="mt-6 flex flex-col space-y-3">
             <button
