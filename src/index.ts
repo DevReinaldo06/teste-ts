@@ -1,27 +1,30 @@
-import express from 'express';
-import { prisma, createAdminKeyConfig } from './db/prisma';
+// src/server.ts
+
+import app from './app'; 
+import { prisma, createAdminKeyConfig } from './db/prisma'; 
 import 'dotenv/config';
 
-const app = express();
-app.use(express.json());
-
 async function main() {
-  try {
-    console.log('Conectando ao banco...');
-    await prisma.$connect();
+    try {
+        console.log('Conectando ao banco de dados...');
+        await prisma.$connect();
 
-    await createAdminKeyConfig();
+        // Garante que a chave de admin seja criada se não existir
+        await createAdminKeyConfig(); 
+        
+        // Define a porta
+        const port = process.env.PORT || 3000;
 
-    console.log('Banco conectado! Iniciando API...');
+        console.log('✅ Banco conectado! Iniciando API...');
 
-    app.listen(process.env.PORT || 3000, () => {
-      console.log(`🚀 API rodando na porta ${process.env.PORT || 3000}`);
-    });
+        app.listen(port, () => {
+            console.log(`🚀 API rodando em http://localhost:${port}`);
+        });
 
-  } catch (error) {
-    console.error('❌ FATAL: Falha ao conectar ao Banco de Dados. A API não será iniciada.', error);
-    process.exit(1);
-  }
+    } catch (error) {
+        console.error('❌ FATAL: Falha ao conectar ao Banco de Dados. A API não será iniciada.', error);
+        process.exit(1);
+    }
 }
 
 main();

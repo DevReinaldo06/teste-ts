@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useFirebase } from './hooks/useFirebase';
-import { useCollections } from './hooks/useCollections';
+import { useCollections } from './hooks/useCollection';
 
 // Importação das Páginas
 import AuthPage from './pages/AuthPage';

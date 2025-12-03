@@ -1,38 +1,28 @@
-import jwt, { Secret } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
+import type { SignOptions } from 'jsonwebtoken';
 
-// Use uma chave secreta do ambiente, crucial para segurança!
-const JWT_SECRET: Secret = process.env.JWT_SECRET || 'chave-secreta-default-nao-usar-em-producao';
-
-interface TokenPayload {
+interface JwtPayload {
     id: number;
     email: string;
     isAdmin: boolean;
 }
 
-/**
- * Gera um token JWT para o usuário.
- * @param payload Dados do usuário a serem incluídos no token.
- * @returns O token JWT assinado.
- */
-export const generateToken = (payload: TokenPayload): string => {
-    return jwt.sign(payload, JWT_SECRET, {
-        expiresIn: '7d', // Token expira em 7 dias
-    });
+const JWT_SECRET = process.env.JWT_SECRET || 'sua_chave_secreta_padrao';
+const JWT_EXPIRES_IN = Number(process.env.JWT_EXPIRES_IN) || 60 * 60 * 24; // 1 dia
+
+export const createToken = (payload: JwtPayload): string => {
+    const options: SignOptions = {
+        expiresIn: JWT_EXPIRES_IN,
+    };
+
+    return jwt.sign(payload, JWT_SECRET, options);
 };
 
-/**
- * Verifica e decodifica um token JWT.
- * @param token O token JWT no formato "Bearer <token>" ou apenas "<token>".
- * @returns O payload do token ou null se for inválido.
- */
-export const verifyToken = (token: string): TokenPayload | null => {
+export const verifyToken = (token: string): JwtPayload | null => {
     try {
-        // Remove 'Bearer ' se presente
-        const actualToken = token.startsWith('Bearer ') ? token.slice(7) : token;
-        
-        const payload = jwt.verify(actualToken, JWT_SECRET) as TokenPayload;
-        return payload;
-    } catch (error) {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        return decoded as JwtPayload;
+    } catch {
         return null;
     }
 };

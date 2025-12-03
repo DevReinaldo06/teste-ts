@@ -1,10 +1,15 @@
 import React, { useState } from 'react';
 import { Firestore } from 'firebase/firestore';
 import { Auth } from 'firebase/auth';
-import { AppPage, User, ADMIN_EMAIL, ADMIN_PASSWORD } from '../types/gameTypes';
+// Importa ADMIN_EMAIL e tipos necessários
+import { AppPage, User, ADMIN_EMAIL } from '../types/gameTypes'; 
 import { findUserByCredentials, registerUser } from '../services/dbService';
 import { FormInput } from '../components/FormElements';
 
+// 🚨 CORREÇÃO PRINCIPAL: Definição da URL base do Backend.
+// O frontend (e.g., porta 5173) precisa saber que a API está em outra porta (3000).
+// Em um projeto real, use import.meta.env.VITE_API_BASE_URL para carregar isso de um .env.
+const API_BASE_URL = 'http://localhost:3000'; 
 
 const AuthPage: React.FC<{
   db: Firestore | null;
@@ -15,7 +20,7 @@ const AuthPage: React.FC<{
   userCollectionPath: string;
 }> = ({ db, auth, setCurrentPage, setAppMessage, setCurrentUser, userCollectionPath }) => {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [password, setPassword] = useState(''); // Será a CHAVE DE ACESSO no modo Admin
   const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -33,14 +38,45 @@ const AuthPage: React.FC<{
 
     try {
       if (isAdminMode) {
-        // Acesso Administrativo (Compara credenciais fixas)
-        if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-          // Nota: O ID 'admin-temp-id' é temporário, pois o acesso admin não é via Firestore
+        // --- Acesso Administrativo via API Segura ---
+        
+        // 1. Chama a rota de backend para verificar a chave de acesso (password)
+        // USANDO A URL ABSOLUTA PARA COMUNICAR COM O BACKEND
+        const response = await fetch(`${API_BASE_URL}/auth/admin-key`, { 
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            // Envia a chave digitada no campo 'password'
+            body: JSON.stringify({ password }),
+        });
+
+        let data;
+        // 2. TRATAMENTO DE ERRO JSON: Tenta parsear a resposta. 
+        // Se a API retornar um status de erro (e.g., 404, 500) sem um corpo JSON válido, 
+        // isso evita o erro 'Unexpected end of JSON input'.
+        try {
+            data = await response.json();
+        } catch (jsonError) {
+            console.warn(`Erro ao tentar ler JSON. Status: ${response.status}`);
+            // Se o status for de erro e não houver JSON, exibe uma mensagem genérica de falha.
+            if (!response.ok) {
+                setAppMessage(`Erro de comunicação (Status: ${response.status}). Verifique o console e a configuração CORS.`);
+                setLoading(false);
+                return;
+            }
+            // Caso raro: 200 OK sem JSON.
+            data = { adminKeyValid: false, message: "Resposta inesperada do servidor." };
+        }
+
+        // 3. Verifica a resposta da API (espera 'adminKeyValid: true')
+        if (response.ok && data.adminKeyValid) {
+          // Sucesso: Backend confirmou a chave.
           setCurrentUser({ id: 'admin-temp-id', email: ADMIN_EMAIL, isAdmin: true });
-          // CORREÇÃO: Usando o nome correto da enumeração
           setCurrentPage(AppPage.AdminDashboard); 
         } else {
-          setAppMessage("Credenciais de Administrador inválidas.");
+            // Falha: API retornou erro (e.g., status 400 ou 401)
+          setAppMessage(data.message || "Chave de Administrador inválida ou erro na API.");
         }
       } else if (isRegisterMode) {
         // Cadastro
@@ -67,7 +103,7 @@ const AuthPage: React.FC<{
       }
     } catch (error) {
       console.error("Erro na autenticação:", error);
-      setAppMessage("Ocorreu um erro. Verifique a consola.");
+      setAppMessage(error instanceof Error ? error.message : "Ocorreu um erro inesperado. Verifique a consola.");
     } finally {
       setLoading(false);
     }
@@ -84,20 +120,26 @@ const AuthPage: React.FC<{
       <form onSubmit={handleAuthSubmit} className="w-full max-w-md bg-white dark:bg-gray-800 p-8 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700">
         <h1 className="text-3xl font-bold mb-6 text-center text-indigo-600 dark:text-indigo-400">{getTitle()}</h1>
         
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 bg-gray-50 dark:bg-gray-700 dark:text-white transition duration-150"
-            placeholder="seu@email.com"
-          />
-        </div>
+        {/* CAMPO EMAIL: Aparece se NÃO estiver em AdminMode */}
+        {(!isAdminMode) && (
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 bg-gray-50 dark:bg-gray-700 dark:text-white transition duration-150"
+              placeholder="seu@email.com"
+            />
+          </div>
+        )}
 
+        {/* CAMPO SENHA: O label é ajustado para 'Chave Admin' se estiver em AdminMode */}
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Senha</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            {isAdminMode ? 'Chave de Acesso' : 'Senha'}
+          </label>
           <input
             type="password"
             value={password}
