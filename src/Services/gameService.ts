@@ -1,7 +1,7 @@
 // src/Services/gameService.ts
 
-import { prisma } from '../db/prisma';
-import { NotFoundError, BadRequestError } from '../errors/ApiError';
+import { prisma } from '../db/prisma.ts';
+import { NotFoundError, BadRequestError } from '../errors/ApiError.ts';
 
 /**
  * Busca uma carta aleatória para o desafio.

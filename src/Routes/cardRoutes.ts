@@ -1,33 +1,42 @@
-// back/src/routes/cardRoutes.ts
+// src/Routes/cardRoutes.ts
+
 import { Router } from 'express';
-import { authenticate } from '../middleware/authMiddleware'; // Importa o middleware
-// Importe suas funções de serviço de card: createCard, getCards, updateCard, deleteCard
+// Importa o controlador de cards, que contém a lógica de negócios
+// 💡 CORREÇÃO: Adicionando a extensão .js no final
+import * as cardController from '../controllers/cardController.ts'; 
 
-const cardRouter = Router();
+const router = Router();
 
-// Rota Pública: Listar todos os cards (necessário para a lógica do jogo)
-cardRouter.get('/', async (req, res) => {
-    // ... lógica para buscar todos os cards (getCards)
-    res.status(200).json(/* cards */);
-});
+// ----------------------------------------------------------------------
+// Rotas de Cards - CRUD Completo (AGORA TOTALMENTE LIVRES DE AUTENTICAÇÃO)
+// ----------------------------------------------------------------------
 
-// Rota Protegida: Criar novo card (APENAS Admin/Usuário Autenticado)
-// O middleware 'authenticate' é aplicado aqui.
-cardRouter.post('/', authenticate, async (req, res) => {
-    // ... lógica para criar card (createCard)
-    res.status(201).json(/* newCard */);
-});
+/**
+ * @route GET /card
+ * @desc Lista todos os cards (Necessário para a lógica do jogo).
+ * Acesso: Livre
+ */
+router.get('/', cardController.getCards);
 
-// Rota Protegida: Atualizar card
-cardRouter.put('/:id', authenticate, async (req, res) => {
-    // ... lógica para atualizar card (updateCard)
-    res.status(200).json(/* updatedCard */);
-});
+/**
+ * @route POST /card
+ * @desc Cria um novo card.
+ * Acesso: Livre (para facilitar o seed ou upload de dados pelo cliente admin)
+ */
+router.post('/', cardController.createCard);
 
-// Rota Protegida: Deletar card
-cardRouter.delete('/:id', authenticate, async (req, res) => {
-    // ... lógica para deletar card (deleteCard)
-    res.status(204).send();
-});
+/**
+ * @route PUT /card/:id
+ * @desc Atualiza um card existente.
+ * Acesso: Livre
+ */
+router.put('/:id', cardController.updateCard);
 
-export default cardRouter;
+/**
+ * @route DELETE /card/:id
+ * @desc Deleta um card existente.
+ * Acesso: Livre
+ */
+router.delete('/:id', cardController.deleteCard);
+
+export default router;

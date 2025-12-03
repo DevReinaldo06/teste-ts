@@ -1,61 +1,33 @@
+// src/Routes/authRoutes.ts
+
 import { Router, Request, Response } from 'express';
-// import { adminKey } from '../config/adminConfig'; // REMOVIDO: A chave agora será buscada no DB
+// Importações de segurança (bcrypt, adminService) foram removidas
 import { 
-    createUser, 
     findUser, 
     findUserByEmail, 
     deleteUser,
-} from '../services/userService';
-import { comparePassword } from '../utils/bcrypt'; // NOVO: Para comparar o hash do Admin
-import { getAdminKeyHash } from '../Services/adminService'; // NOVO: Para buscar o hash do DB
+    createUser, // Incluído para clareza
+// 💡 CORREÇÃO: Adicionando a extensão .js no final
+} from '../Services/userService.ts'; 
 
 const authRouter = Router();
 
 // ----------------------------------------------------------------------
 /**
- * Rota 1: Verifica a Chave de Administrador (AGORA SEGURA COM HASH NO DB)
+ * Rota 1: Rota de AdminKey REMOVIDA
  */
-authRouter.post('/admin-key', async (req: Request, res: Response) => {
-    const { password } = req.body;
-    
-    if (!password) {
-        return res.status(400).json({ message: "A senha do administrador é obrigatória." });
-    }
-
-    try {
-        // 1. Busca o hash salvo na tabela AdminConfig (ID 1)
-        const adminConfig = await getAdminKeyHash();
-        
-        if (!adminConfig) {
-             // Isso só deve ocorrer se a tabela AdminConfig nunca foi inicializada.
-             return res.status(500).json({ message: "Erro de configuração: Chave Admin não inicializada." });
-        }
-        
-        // 2. Compara a senha de texto simples fornecida com o hash salvo no DB
-        const keyMatch = await comparePassword(password, adminConfig.adminKeyHash);
-        
-        if (keyMatch) {
-            // Sucesso: Retorna true e um token simples (ou JWT real)
-            return res.status(200).json({ 
-                adminKeyValid: true, 
-                message: "Acesso Administrativo concedido.",
-                token: "admin-access-token-123" 
-            });
-        } else {
-            return res.status(401).json({ 
-                adminKeyValid: false, 
-                message: "Chave de Acesso inválida." 
-            });
-        }
-    } catch (error) {
-        console.error("Erro na verificação do AdminKey:", error);
-        return res.status(500).json({ message: "Erro interno do servidor." });
-    }
+authRouter.post('/admin-key', (req: Request, res: Response) => {
+    // Retorna um sucesso simulado já que a autenticação está desativada
+    return res.status(200).json({ 
+        adminKeyValid: true, 
+        message: "Acesso Administrativo concedido (Simulado).",
+        token: "admin-access-token-simulado" 
+    });
 });
 
 // ----------------------------------------------------------------------
 /**
- * Rota 2: Login de Usuário
+ * Rota 2: Login de Usuário (Apenas busca o usuário para fins de UI)
  */
 authRouter.post('/login', async (req: Request, res: Response) => {
     const { email, password } = req.body;
@@ -65,6 +37,7 @@ authRouter.post('/login', async (req: Request, res: Response) => {
     }
 
     try {
+        // Apenas valida se o usuário e senha existem no DB, não há mais geração de token
         const user = await findUser(email, password);
         
         if (user) {
@@ -73,9 +46,8 @@ authRouter.post('/login', async (req: Request, res: Response) => {
                     id: user.id,
                     email: user.email,
                     isAdmin: user.isAdmin,
-                    // OBS: A senha (user.password) foi REMOVIDA daqui por segurança!
                 },
-                message: "Login bem-sucedido." 
+                message: "Login bem-sucedido (Apenas simulação)." 
             });
         } else {
             return res.status(401).json({ message: "Email ou senha incorretos." });
@@ -91,7 +63,6 @@ authRouter.post('/login', async (req: Request, res: Response) => {
  * Rota 3: Registro de Usuário
  */
 authRouter.post('/register', async (req: Request, res: Response) => {
-    // ... (O código aqui não foi alterado pois estava correto)
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -112,7 +83,7 @@ authRouter.post('/register', async (req: Request, res: Response) => {
                 email: newUser.email,
                 isAdmin: newUser.isAdmin
             },
-            message: "Registro bem-sucedido. Faça login." 
+            message: "Registro bem-sucedido." 
         });
 
     } catch (error) {
@@ -126,7 +97,6 @@ authRouter.post('/register', async (req: Request, res: Response) => {
  * Rota 4: Deleta Usuário
  */
 authRouter.delete('/user/:id', async (req: Request, res: Response) => {
-    // ... (O código aqui não foi alterado pois estava correto)
     const { id } = req.params;
     
     try {

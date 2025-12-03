@@ -1,17 +1,22 @@
+// prisma/schema.prisma
+
 datasource db {
   provider = "postgresql"
+  // A URL deve ser lida do .env diretamente pelo Prisma CLI:
   url      = env("DATABASE_URL")
 }
 
 generator client {
-  provider = "prisma-client-js"
+  // Na v6, o provider padrão é 'prisma-client-js', mas 'prisma-client' também funciona.
+  provider = "prisma-client-js" 
 }
 
+// ... Seus modelos permanecem os mesmos: User, AdminConfig, Card
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
+  id        Int     @id @default(autoincrement())
+  email     String  @unique
   password  String
-  isAdmin   Boolean  @default(false)
+  isAdmin   Boolean @default(false)
 }
 
 model AdminConfig {
@@ -20,11 +25,11 @@ model AdminConfig {
 }
 
 model Card {
-  id               Int      @id @default(autoincrement())
-  nome             String
-  imagem           String
-  imagemRevelada   String
-  tipo             String
-  nivel            Int
-  classe           String
+  id             Int     @id @default(autoincrement())
+  nome           String
+  imagem         String
+  imagemRevelada String
+  tipo           String
+  nivel          Int
+  classe         String
 }

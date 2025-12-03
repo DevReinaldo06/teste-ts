@@ -1,8 +1,8 @@
 // src/Controllers/adminUserController.ts
 
 import { Request, Response, NextFunction } from 'express';
-import * as adminUserService from '../Services/adminUserService';
-import { BadRequestError } from '../errors/ApiError';
+import * as adminUserService from '../Services/adminUserService.ts';
+import { BadRequestError } from '../errors/ApiError.ts';
 
 // ----------------------------------------------------------------
 // GET /admin/users (Listar todos)

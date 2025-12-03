@@ -1,8 +1,8 @@
 // src/Services/adminUserService.ts
 
-import { prisma } from '../db/prisma'; // ✅ CORRIGIDO: USANDO IMPORT NOMEADO
-import { hashPassword } from '../utils/bcrypt';
-import { NotFoundError, ConflictError, BadRequestError } from '../errors/ApiError'; 
+import { prisma } from '../db/prisma.ts'; // ✅ CORRIGIDO: USANDO IMPORT NOMEADO
+import { hashPassword } from '../utils/bcrypt.ts';
+import { NotFoundError, ConflictError, BadRequestError } from '../errors/ApiError.ts'; 
 
 // ----------------------------------------------------------------
 // Admin: Listar Todos os Usuários (GET /admin/users)

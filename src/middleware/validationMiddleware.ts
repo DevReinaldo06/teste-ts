@@ -2,7 +2,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { ZodTypeAny, ZodError } from 'zod';
-import { BadRequestError } from '../errors/ApiError';
+import { BadRequestError } from '../errors/ApiError.ts';
 
 export const validate = (schema: ZodTypeAny) =>
   (req: Request, res: Response, next: NextFunction) => {

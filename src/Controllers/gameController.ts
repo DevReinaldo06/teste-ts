@@ -1,8 +1,8 @@
 // src/Controllers/gameController.ts
 
 import { Request, Response, NextFunction } from 'express';
-import * as gameService from '../Services/gameService';
-import { BadRequestError } from '../errors/ApiError';
+import * as gameService from '../Services/gameService.ts';
+import { BadRequestError } from '../errors/ApiError.ts';
 
 /**
  * Endpoint para obter uma carta aleatória (GET /game/mystery-card)

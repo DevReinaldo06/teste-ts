@@ -1,13 +1,10 @@
-// src/Routes/adminRoutes.ts
-
 import { Router } from 'express';
-import { isAdmin } from '../middleware/authMiddleware'; // authenticate foi removido
-import * as adminUserController from '../Controllers/adminUserController';
+// isAdmin e authenticate foram removidos para tornar as rotas livres
+import * as adminUserController from '../Controllers/adminUserController.ts';
 
 const router = Router();
 
-// Todas as rotas de administração devem ser restritas a Admins (authenticate já foi aplicado em app.ts)
-router.use(isAdmin); // Apenas isAdmin é necessário aqui
+// Todas as rotas de administração agora são totalmente públicas.
 
 // CRUD de Usuários para Administrador
 // GET /users - Listar todos

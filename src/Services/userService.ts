@@ -1,156 +1,160 @@
-// src/Services/userService.ts
-
-import { prisma } from '../db/prisma';
-// Incluí comparePassword, que é essencial para a função findUser (login)
-import { hashPassword, comparePassword } from '../utils/bcrypt'; 
-import { ConflictError, NotFoundError } from '../errors/ApiError';
-import { User, Prisma } from '@prisma/client'; 
+import { prisma } from '../db/prisma.ts';
+import { hashPassword, comparePassword } from '../utils/bcrypt.ts'; 
+import { ConflictError, NotFoundError } from '../errors/ApiError.ts';
+import { User, Prisma } from '@prisma/client'; 
 
 // Tipo de retorno para dados de usuário seguros (sem o hash da senha)
-type UserSafe = Omit<User, 'password'>; 
+type UserSafe = Omit<User, 'password'>; 
 
 // ----------------------------------------------------------------------
 
 /**
- * Lógica de Cadastro (Registro).
- * Exportado como 'createUser'.
- */
+ * Lógica de Cadastro (Registro).
+ */
 export async function createUser(email: string, password: string): Promise<UserSafe> {
-    const existingUser = await prisma.user.findUnique({
-        where: { email },
-    });
+    const existingUser = await prisma.user.findUnique({
+        where: { email },
+    });
 
-    if (existingUser) {
-        throw new ConflictError('Este e-mail já está cadastrado.');
-    }
+    if (existingUser) {
+        throw new ConflictError('Este e-mail já está cadastrado.');
+    }
 
-    const hashedPassword = await hashPassword(password);
+    const hashedPassword = await hashPassword(password);
 
-    const newUser = await prisma.user.create({
-        data: {
-            email,
-            password: hashedPassword,
-            isAdmin: false, 
-        },
-        select: {
-            id: true,
-            email: true,
-            isAdmin: true,
-        },
-    });
+    const newUser = await prisma.user.create({
+        data: {
+            email,
+            password: hashedPassword,
+            isAdmin: false, 
+        },
+        select: {
+            id: true,
+            email: true,
+            isAdmin: true,
+        },
+    });
 
-    return newUser;
+    return newUser;
 }
 
 /**
- * Lógica de Login: Busca o usuário pelo email e verifica a senha.
- * Exportado como 'findUser'.
- */
+ * Lógica de Login: Busca o usuário pelo email e verifica a senha.
+ */
 export async function findUser(email: string, password: string): Promise<User | null> {
-    const user = await prisma.user.findUnique({
-        where: { email },
-    });
+    const user = await prisma.user.findUnique({
+        where: { email },
+    });
 
-    if (!user) {
-        // Usuário não encontrado
-        return null;
-    }
+    if (!user) {
+        // Usuário não encontrado
+        return null;
+    }
 
-    // Compara a senha fornecida com o hash armazenado
-    const passwordMatch = await comparePassword(password, user.password);
+    // Compara a senha fornecida com o hash armazenado
+    const passwordMatch = await comparePassword(password, user.password);
 
-    if (!passwordMatch) {
-        // Senha incorreta
-        return null;
-    }
+    if (!passwordMatch) {
+        // Senha incorreta
+        return null;
+    }
 
-    return user;
+    return user;
 }
 
 /**
- * Busca o usuário apenas por email (para verificar unicidade no registro).
- * Exportado como 'findUserByEmail'.
- */
+ * Busca o usuário apenas por email (para verificar unicidade no registro).
+ */
 export async function findUserByEmail(email: string): Promise<UserSafe | null> {
-    const user = await prisma.user.findUnique({
-        where: { email },
-        select: { id: true, email: true, isAdmin: true },
-    });
-    
-    return user;
+    const user = await prisma.user.findUnique({
+        where: { email },
+        select: { id: true, email: true, isAdmin: true },
+    });
+    
+    return user;
 }
 
 // ----------------------------------------------------------------------
 
 /**
- * Busca o usuário por ID (para /users/me).
+ * Busca o PRIMEIRO usuário do banco de dados. (Para simulação de perfil logado).
  */
-export async function getUserById(id: number): Promise<UserSafe> {
-    const user = await prisma.user.findUnique({
-        where: { id },
-        select: { id: true, email: true, isAdmin: true },
-    });
-
-    if (!user) {
-        throw new NotFoundError('Usuário não encontrado.');
-    }
+export async function getFirstUser(): Promise<UserSafe | null> {
+    const user = await prisma.user.findFirst({
+        select: { id: true, email: true, isAdmin: true },
+        orderBy: { id: 'asc' }
+    });
     return user;
 }
 
 /**
- * Atualiza o perfil do usuário logado (/users/me).
- */
-export async function updateUserDetails(userId: number, email?: string, password?: string): Promise<UserSafe> {
-    const data: any = {};
+ * Busca o usuário por ID (para /users/me e rotas admin).
+ */
+export async function getUserById(id: number): Promise<UserSafe> {
+    const user = await prisma.user.findUnique({
+        where: { id },
+        select: { id: true, email: true, isAdmin: true },
+    });
 
-    if (email) {
-        const existingUser = await prisma.user.findFirst({
-            where: { email, NOT: { id: userId } }
-        });
-        if (existingUser) {
-            throw new ConflictError('Este e-mail já está sendo utilizado por outro usuário.');
-        }
-        data.email = email;
-    }
-
-    if (password) {
-        data.password = await hashPassword(password);
-    }
-    
-    try {
-        const updatedUser = await prisma.user.update({
-            where: { id: userId },
-            data,
-            select: { id: true, email: true, isAdmin: true }
-        });
-        return updatedUser;
-    } catch (error) {
-        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-            throw new NotFoundError('Seu usuário não foi encontrado.');
-        }
-        throw error;
-    }
+    if (!user) {
+        throw new NotFoundError('Usuário não encontrado.');
+    }
+    return user;
 }
 
 /**
- * Deleta um usuário.
- * Exportado como 'deleteUser'.
- */
-export async function deleteUser(id: string): Promise<void> {
-    const userId = parseInt(id, 10);
-    
-    if (isNaN(userId)) {
-        throw new NotFoundError('ID de usuário inválido.');
-    }
+ * Atualiza o perfil do usuário logado (/users/me).
+ */
+export async function updateUserDetails(userId: number, email?: string, password?: string): Promise<UserSafe> {
+    const data: any = {};
 
-    try {
-        await prisma.user.delete({
-            where: { id: userId },
-        });
-    } catch (error) {
-        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-            throw new NotFoundError('Usuário não encontrado para exclusão.');
-        }
-        throw error;
-    }
+    if (email) {
+        const existingUser = await prisma.user.findFirst({
+            where: { email, NOT: { id: userId } }
+        });
+        if (existingUser) {
+            throw new ConflictError('Este e-mail já está sendo utilizado por outro usuário.');
+        }
+        data.email = email;
+    }
+
+    if (password) {
+        data.password = await hashPassword(password);
+    }
+    
+    try {
+        const updatedUser = await prisma.user.update({
+            where: { id: userId },
+            data,
+            select: { id: true, email: true, isAdmin: true }
+        });
+        return updatedUser;
+    } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+            throw new NotFoundError('Seu usuário não foi encontrado.');
+        }
+        throw error;
+    }
+}
+
+/**
+ * Deleta um usuário.
+ */
+export async function deleteUser(id: string): Promise<void> {
+    const userId = parseInt(id, 10);
+    
+    if (isNaN(userId)) {
+        throw new NotFoundError('ID de usuário inválido.');
+    }
+
+    try {
+        await prisma.user.delete({
+            where: { id: userId },
+        });
+    } catch (error) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+            throw new NotFoundError('Usuário não encontrado para exclusão.');
+        }
+        throw error;
+    }
 }

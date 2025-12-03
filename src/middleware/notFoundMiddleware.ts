@@ -1,13 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 
-import authRouter from '../Routes/authRoutes'; 
-import adminRouter from '../Routes/adminRoutes'; 
-import cardRouter from '../Routes/cardRoutes'; 
-import gameRouter from '../Routes/gameRoutes';
-import userRouter from '../Routes/userRoutes'; 
-
-import { authenticate, isAdmin } from './authMiddleware'; 
+import authRouter from '../Routes/authRoutes.ts'; 
+import cardRouter from '../Routes/cardRoutes.ts'; 
+import gameRouter from '../Routes/gameRoutes.ts';
+import userRouter from '../Routes/userRoutes.ts'; 
 
 const app = express();
 
@@ -28,17 +25,11 @@ app.use('/users', userRouter);
 
 // --- 2. ZONA PROTEGIDA (Requer Autenticação JWT) ---
 
-// Rotas que exigem um token de acesso válido.
-// Toda rota abaixo será verificada pelo 'authenticate'
-app.use(authenticate); 
+
 
 // Rotas que exigem usuário logado
 app.use('/game', gameRouter);
 
-// Rotas que exigem ADMIN logado 
-// O 'authenticate' já foi aplicado acima, só precisamos do 'isAdmin'
-app.use('/admin', isAdmin, adminRouter); 
-app.use('/cards', isAdmin, cardRouter); 
 
 
 // Rotas de tratamento de erro (Se você as criar, coloque-as aqui)
